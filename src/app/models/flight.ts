@@ -1,4 +1,4 @@
-export interface FlightResponse {
+export interface Flight {
   hex: string;
   reg_number: string;
   flag: string;
@@ -21,10 +21,4 @@ export interface FlightResponse {
   aircraft_icao: string;
   updated: number;
   status: 'scheduled' | 'en-route' | 'landed';
-}
-
-export interface Flight {
-  latitude: number;
-  longitude: number;
-  direction: number;
 }
