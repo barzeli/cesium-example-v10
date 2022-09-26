@@ -1,4 +1,4 @@
-export interface FlightFromApi {
+export interface FlightResponse {
   hex: string;
   reg_number: string;
   flag: string;
@@ -23,19 +23,8 @@ export interface FlightFromApi {
   status: 'scheduled' | 'en-route' | 'landed';
 }
 
-export type FlightResponseFields = keyof FlightFromApi;
-
-export interface FlightResponse {
-  lat: number;
-  lng: number;
-  alt: number;
-  dir: number;
-  status: 'scheduled' | 'en-route' | 'landed';
-}
-
 export interface Flight {
   latitude: number;
   longitude: number;
-  altitude: number;
   direction: number;
 }
