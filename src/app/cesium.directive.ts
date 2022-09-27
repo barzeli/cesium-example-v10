@@ -32,8 +32,8 @@ export class CesiumDirective implements OnInit {
     viewer.dataSources.add(planesLayer);
     viewer.dataSources.add(airportsLayer);
 
-    timer(0, 10000)
-      .pipe(switchMap(() => this.dataService.getFlights()))
+    timer(0, 1000)
+      .pipe(switchMap((index) => this.dataService.getFlights(index)))
       .subscribe((flights) => {
         planesLayer.entities.removeAll();
         flights.forEach((flight) => {

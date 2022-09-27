@@ -7,3 +7,7 @@ div[appCesium] {
   padding: 0;
   overflow: hidden;
 }
+
+.cesium-viewer-bottom {
+  visibility: hidden;
+}
