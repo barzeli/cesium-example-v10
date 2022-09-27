@@ -1,5 +1,15 @@
 import { Directive, ElementRef, OnInit } from '@angular/core';
-import { Cartesian3, Math, SceneMode, Viewer, CustomDataSource } from 'cesium';
+import {
+  SceneMode,
+  Viewer,
+  CustomDataSource,
+  ScreenSpaceEventHandler,
+  ScreenSpaceEventType,
+  VerticalOrigin,
+  Math,
+  Cartesian3,
+  ArcType,
+} from 'cesium';
 import { timer } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -29,10 +39,34 @@ export class CesiumDirective implements OnInit {
 
     const planesLayer = new CustomDataSource('planes');
     const airportsLayer = new CustomDataSource('airports');
+    const pinpointLayer = new CustomDataSource('pinpoint');
+
     viewer.dataSources.add(planesLayer);
     viewer.dataSources.add(airportsLayer);
+    viewer.dataSources.add(pinpointLayer);
 
-    timer(0, 1000)
+    const handler = new ScreenSpaceEventHandler(viewer.canvas);
+    handler.setInputAction((event: ScreenSpaceEventHandler.PositionedEvent) => {
+      // const earthPosition = viewer.scene.pickPosition(event.position);
+      const earthPosition = viewer.camera.pickEllipsoid(
+        event.position,
+        viewer.scene.globe.ellipsoid
+      );
+      const isMapPinpointed = !!pinpointLayer.entities.values.length;
+      pinpointLayer.entities.removeAll();
+
+      // !viewer.selectedEntity &&
+      !isMapPinpointed &&
+        pinpointLayer.entities.add({
+          position: earthPosition,
+          billboard: {
+            image: '../assets/icons/pin.svg',
+            verticalOrigin: VerticalOrigin.BOTTOM,
+          },
+        });
+    }, ScreenSpaceEventType.LEFT_CLICK);
+
+    timer(0, 10000)
       .pipe(switchMap((index) => this.dataService.getFlights(index)))
       .subscribe((flights) => {
         planesLayer.entities.removeAll();
@@ -40,23 +74,44 @@ export class CesiumDirective implements OnInit {
           planesLayer.entities.add({
             position: Cartesian3.fromDegrees(flight.lng, flight.lat),
             billboard: {
-              image: '../assets/plane.svg',
+              image: '../assets/icons/plane.svg',
               height: 20,
               width: 20,
               rotation: Math.toRadians(flight.dir),
             },
+          });
+
+          this.dataService.getAirportsByFlight(flight).subscribe((airports) => {
+            airports.depAirport &&
+              airports.arrAirport &&
+              planesLayer.entities.add({
+                polyline: {
+                  arcType: ArcType.GEODESIC,
+                  positions: [
+                    Cartesian3.fromDegrees(
+                      airports?.depAirport.lng,
+                      airports?.depAirport.lat
+                    ),
+                    Cartesian3.fromDegrees(flight.lng, flight.lat),
+                    Cartesian3.fromDegrees(
+                      airports?.arrAirport.lng,
+                      airports?.arrAirport.lat
+                    ),
+                  ],
+                },
+              });
           });
         });
       });
 
     this.dataService.getAirports().subscribe((airports) => {
       airportsLayer.entities.removeAll();
-      airports.response.forEach((airport) => {
+      airports.forEach((airport) => {
         airportsLayer.entities.add({
           position: Cartesian3.fromDegrees(airport.lng, airport.lat),
           description: `${airport.name}, ${airport.country_code}`,
           billboard: {
-            image: '../assets/airport.svg',
+            image: '../assets/icons/airport.svg',
             height: 20,
             width: 20,
           },
