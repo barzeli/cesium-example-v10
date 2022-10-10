@@ -31,9 +31,11 @@ export class CesiumDirective implements OnInit {
       fullscreenButton: false,
       geocoder: false,
       homeButton: false,
+      infoBox: false,
       navigationHelpButton: false,
       sceneMode: SceneMode.SCENE2D,
       sceneModePicker: false,
+      selectionIndicator: false,
       timeline: false,
     });
 
@@ -45,26 +47,39 @@ export class CesiumDirective implements OnInit {
     viewer.dataSources.add(airportsLayer);
     viewer.dataSources.add(pinpointLayer);
 
-    const handler = new ScreenSpaceEventHandler(viewer.canvas);
-    handler.setInputAction((event: ScreenSpaceEventHandler.PositionedEvent) => {
-      // const earthPosition = viewer.scene.pickPosition(event.position);
-      const earthPosition = viewer.camera.pickEllipsoid(
-        event.position,
-        viewer.scene.globe.ellipsoid
-      );
-      const isMapPinpointed = !!pinpointLayer.entities.values.length;
-      pinpointLayer.entities.removeAll();
+    const screenSpaceEventHandler = new ScreenSpaceEventHandler(viewer.canvas);
+    screenSpaceEventHandler.setInputAction(
+      (event: ScreenSpaceEventHandler.PositionedEvent) => {
+        const earthPosition = viewer.camera.pickEllipsoid(
+          event.position,
+          viewer.scene.globe.ellipsoid
+        );
 
-      // !viewer.selectedEntity &&
-      !isMapPinpointed &&
-        pinpointLayer.entities.add({
-          position: earthPosition,
-          billboard: {
-            image: '../assets/icons/pin.svg',
-            verticalOrigin: VerticalOrigin.BOTTOM,
-          },
-        });
-    }, ScreenSpaceEventType.LEFT_CLICK);
+        const isMapPinpointed = !!pinpointLayer.entities.values.length;
+        pinpointLayer.entities.removeAll();
+
+        !viewer.selectedEntity &&
+          !isMapPinpointed &&
+          pinpointLayer.entities.add({
+            position: earthPosition,
+            billboard: {
+              image: '../assets/icons/pin.svg',
+              verticalOrigin: VerticalOrigin.BOTTOM,
+            },
+          });
+
+        viewer.selectedEntity &&
+          pinpointLayer.entities.add({
+            position: viewer.selectedEntity.position,
+            billboard: {
+              image: '../assets/icons/selected.svg',
+              height: 40,
+              width: 40,
+            },
+          });
+      },
+      ScreenSpaceEventType.LEFT_CLICK
+    );
 
     timer(0, 10000)
       .pipe(switchMap((index) => this.dataService.getFlights(index)))
